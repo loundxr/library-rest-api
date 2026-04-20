@@ -1,5 +1,11 @@
 package main
 
+import (
+	"library-rest-api/internal/api"
+	"library-rest-api/internal/library"
+	"log"
+)
+
 /*
 — В этой библиотеке хранятся книги, каждая книга имеет:
 	1. Название
@@ -15,10 +21,17 @@ package main
 	4. Получать список всех книг, с учётом возможной фильтрации по:
 	   автору, прочитано/не прочитано
 	5. Удалять книги из нашей библиотеки
-— Взаимодействие с приложением происходит по протоколу НТТР, 
+— Взаимодействие с приложением происходит по протоколу НТТР,
   контракт приложения должен удовлетворять принципам REST API
 */
 
 func main() {
-	
+	storage := library.NewStorage()
+	handlers := api.NewHTTPHandlers(storage)
+	server := api.NewHTTPServer(handlers)
+	address := "localhost:8008"
+
+	if err := server.Start(address); err != nil {
+		log.Fatal("failed to start server:", err)
+	}
 }
