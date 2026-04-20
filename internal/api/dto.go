@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"library-rest-api/internal/library"
 	"net/http"
 	"time"
 )
@@ -32,7 +33,7 @@ func (b BookDTO) Validate() error {
 
 type ErrorDTO struct {
 	Message string
-	Time    time.Time
+	Time    library.PrettyTime
 }
 
 func SendError(w http.ResponseWriter, msg string, status int) {
@@ -40,7 +41,7 @@ func SendError(w http.ResponseWriter, msg string, status int) {
 	w.WriteHeader(status)
 	e := ErrorDTO{
 		Message: msg,
-		Time:    time.Now(),
+		Time:    library.PrettyTime(time.Now()),
 	}
 	if err := json.NewEncoder(w).Encode(e); err != nil {
 		fmt.Println("error encoding errorDTO:", err)

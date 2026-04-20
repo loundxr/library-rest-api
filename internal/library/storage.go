@@ -61,3 +61,14 @@ func (s *Storage) GetAllBooks(p GetBooksParams) []Book {
 
 	return cpy
 }
+
+func (s *Storage) GetBook(id uuid.UUID) (*Book, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	book, ok := s.lib[id]
+	if !ok {
+		return nil, ErrBookNotFound
+	}
+	return &book, nil
+}

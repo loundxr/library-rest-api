@@ -7,6 +7,9 @@ import (
 	"library-rest-api/internal/library"
 	"net/http"
 	"strconv"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type HTTPHandlers struct {
@@ -76,6 +79,31 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(books); err != nil {
+		fmt.Println("error encoding json:", err)
+		return
+	}
+}
+
+func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		SendError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	book, err := h.lib.GetBook(id)
+	if err != nil {
+		if errors.Is(err, library.ErrBookNotFound) {
+			SendError(w, err.Error(), http.StatusNotFound)
+		} else {
+			SendError(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(book); err != nil {
 		fmt.Println("error encoding json:", err)
 		return
 	}
