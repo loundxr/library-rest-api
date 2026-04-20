@@ -21,8 +21,15 @@ func NewStorage() *Storage {
 	}
 }
 
+func GenerateKey(title, author string, pages int) string {
+	return fmt.Sprintf("%s/%s/%d",
+		strings.ToLower(strings.TrimSpace(title)),
+		strings.ToLower(strings.TrimSpace(author)),
+		pages)
+}
+
 func (s *Storage) AddBook(params BookParams) (*Book, error) {
-	newParams := fmt.Sprintf("%s/%s/%d", params.Title, params.Author, params.Pages)
+	newParams := GenerateKey(params.Title, params.Author, params.Pages)
 
 	s.Lock()
 	defer s.Unlock()
@@ -71,4 +78,48 @@ func (s *Storage) GetBook(id uuid.UUID) (*Book, error) {
 		return nil, ErrBookNotFound
 	}
 	return &book, nil
+}
+
+func (s *Storage) DeleteBook(id uuid.UUID) error {
+	s.Lock()
+	defer s.Unlock()
+
+	b, ok := s.lib[id]
+	if !ok {
+		return ErrBookNotFound
+	}
+
+	key := GenerateKey(b.Title, b.Author, b.Pages)
+
+	delete(s.lib, id)
+	delete(s.uniqueness, key)
+	return nil
+}
+
+func (s *Storage) ReadBook(id uuid.UUID) (Book, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	book, ok := s.lib[id]
+	if !ok {
+		return Book{}, ErrBookNotFound
+	}
+
+	book.Read()
+	s.lib[id] = book
+	return book, nil
+}
+
+func (s *Storage) UnreadBook(id uuid.UUID) (Book, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	book, ok := s.lib[id]
+	if !ok {
+		return Book{}, ErrBookNotFound
+	}
+
+	book.Read()
+	s.lib[id] = book
+	return book, nil
 }

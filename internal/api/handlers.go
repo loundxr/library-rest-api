@@ -22,6 +22,15 @@ func NewHTTPHandlers(lib *library.Storage) *HTTPHandlers {
 	}
 }
 
+func ParseId(str string, w http.ResponseWriter) (uuid.UUID, error) {
+	id, err := uuid.Parse(str)
+	if err != nil {
+		SendError(w, err.Error(), http.StatusBadRequest)
+		return uuid.UUID{}, err
+	}
+	return id, nil
+}
+
 func (h *HTTPHandlers) HandleAddBook(w http.ResponseWriter, r *http.Request) {
 	var dto BookDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
@@ -85,10 +94,15 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
-	idStr := mux.Vars(r)["id"]
-	id, err := uuid.Parse(idStr)
+	// idStr := mux.Vars(r)["id"]
+	// id, err := uuid.Parse(idStr)
+	// if err != nil {
+	// 	SendError(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
+
+	id, err := ParseId(mux.Vars(r)["id"], w)
 	if err != nil {
-		SendError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -108,3 +122,35 @@ func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *HTTPHandlers) HandleDeleteBook(w http.ResponseWriter, r *http.Request) {
+	// idStr := mux.Vars(r)["id"]
+	// id, err := uuid.Parse(idStr)
+	// if err != nil {
+	// 	SendError(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
+
+	id, err := ParseId(mux.Vars(r)["id"], w)
+	if err != nil {
+		return
+	}
+
+	if err := h.lib.DeleteBook(id); err != nil {
+		if errors.Is(err, library.ErrBookNotFound) {
+			SendError(w, err.Error(), http.StatusNotFound)
+		} else {
+			SendError(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// func (h *HTTPHandlers) HandleMarkReadBook(w http.ResponseWriter, r *http.Request) {
+// 	id, err := ParseId(mux.Vars(r)["id"], w)
+// 	if err != nil {
+// 		return
+// 	}
+
+// }
