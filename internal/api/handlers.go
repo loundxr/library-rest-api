@@ -54,7 +54,7 @@ func (h *HTTPHandlers) HandleAddBook(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, library.ErrBookAlreadyExists) {
 			SendError(w, err.Error(), http.StatusConflict)
 		} else {
-			SendError(w, err.Error(), http.StatusInternalServerError)
+			SendError(w, "internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -94,7 +94,7 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
-	id, err := ParseId(mux.Vars(r)["id"], w)
+	id, err := ParseID(mux.Vars(r)["id"], w)
 	if err != nil {
 		return
 	}
@@ -104,7 +104,7 @@ func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)
 		} else {
-			SendError(w, err.Error(), http.StatusInternalServerError)
+			SendError(w, "internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -117,7 +117,7 @@ func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HTTPHandlers) HandleDeleteBook(w http.ResponseWriter, r *http.Request) {
-	id, err := ParseId(mux.Vars(r)["id"], w)
+	id, err := ParseID(mux.Vars(r)["id"], w)
 	if err != nil {
 		return
 	}
@@ -126,7 +126,7 @@ func (h *HTTPHandlers) HandleDeleteBook(w http.ResponseWriter, r *http.Request) 
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)
 		} else {
-			SendError(w, err.Error(), http.StatusInternalServerError)
+			SendError(w, "internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -134,7 +134,7 @@ func (h *HTTPHandlers) HandleDeleteBook(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *HTTPHandlers) HandleMarkReadBook(w http.ResponseWriter, r *http.Request) {
-	id, err := ParseId(mux.Vars(r)["id"], w)
+	id, err := ParseID(mux.Vars(r)["id"], w)
 	if err != nil {
 		return
 	}
@@ -152,7 +152,7 @@ func (h *HTTPHandlers) HandleMarkReadBook(w http.ResponseWriter, r *http.Request
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)
 		} else {
-			SendError(w, err.Error(), http.StatusInternalServerError)
+			SendError(w, "internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
