@@ -22,7 +22,7 @@ func NewHTTPHandlers(lib *library.Storage) *HTTPHandlers {
 	}
 }
 
-func ParseId(str string, w http.ResponseWriter) (uuid.UUID, error) {
+func ParseID(str string, w http.ResponseWriter) (uuid.UUID, error) {
 	id, err := uuid.Parse(str)
 	if err != nil {
 		SendError(w, err.Error(), http.StatusBadRequest)
