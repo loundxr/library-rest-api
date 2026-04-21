@@ -60,3 +60,7 @@ func (e ErrorDTO) String() string {
 	}
 	return string(b)
 }
+
+type ReadDTO struct {
+	Read bool
+}

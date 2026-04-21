@@ -96,7 +96,7 @@ func (s *Storage) DeleteBook(id uuid.UUID) error {
 	return nil
 }
 
-func (s *Storage) ReadBook(id uuid.UUID) (Book, error) {
+func (s *Storage) MarkBook(id uuid.UUID, read bool) (Book, error) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -105,21 +105,11 @@ func (s *Storage) ReadBook(id uuid.UUID) (Book, error) {
 		return Book{}, ErrBookNotFound
 	}
 
-	book.Read()
-	s.lib[id] = book
-	return book, nil
-}
-
-func (s *Storage) UnreadBook(id uuid.UUID) (Book, error) {
-	s.Lock()
-	defer s.Unlock()
-
-	book, ok := s.lib[id]
-	if !ok {
-		return Book{}, ErrBookNotFound
+	if read {
+		book.Read()
+	} else {
+		book.Unread()
 	}
-
-	book.Read()
 	s.lib[id] = book
 	return book, nil
 }

@@ -17,13 +17,13 @@ type Book struct {
 	ReadAt         *PrettyTime `json:"read_at"`
 }
 
-func (b Book) Read() {
+func (b *Book) Read() {
 	b.IsRead = true
 	prettyNow := PrettyTime(time.Now())
 	b.ReadAt = &prettyNow
 }
 
-func (b Book) Unread() {
+func (b *Book) Unread() {
 	b.IsRead = false
 	b.ReadAt = nil
 }
