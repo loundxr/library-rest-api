@@ -83,7 +83,18 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 		params.IsRead = &isRead
 	}
 
-	books := h.lib.GetAllBooks(params)
+	params.SortType = r.URL.Query().Get("sort")
+
+	books, err := h.lib.GetAllBooks(params)
+
+	if err != nil {
+		if errors.Is(err, library.ErrInvalidSortKey) {
+			SendError(w, err.Error(), http.StatusBadRequest)
+		} else {
+			SendError(w, "internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

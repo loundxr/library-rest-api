@@ -35,8 +35,9 @@ type BookParams struct {
 }
 
 type GetBooksParams struct {
-	Author string
-	IsRead *bool
+	Author   string
+	IsRead   *bool
+	SortType string
 }
 
 func NewBook(title, author string, pages int) *Book {

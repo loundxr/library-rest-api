@@ -1,9 +1,12 @@
 package library
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -21,7 +24,7 @@ func NewStorage() *Storage {
 	}
 }
 
-func GenerateKey(title, author string, pages int) string {
+func generateKey(title, author string, pages int) string {
 	return fmt.Sprintf("%s/%s/%d",
 		strings.ToLower(strings.TrimSpace(title)),
 		strings.ToLower(strings.TrimSpace(author)),
@@ -29,7 +32,7 @@ func GenerateKey(title, author string, pages int) string {
 }
 
 func (s *Storage) AddBook(params BookParams) (Book, error) {
-	newParams := GenerateKey(params.Title, params.Author, params.Pages)
+	newParams := generateKey(params.Title, params.Author, params.Pages)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -44,13 +47,13 @@ func (s *Storage) AddBook(params BookParams) (Book, error) {
 	return *book, nil
 }
 
-func (s *Storage) GetAllBooks(p GetBooksParams) []Book {
+func (s *Storage) GetAllBooks(p GetBooksParams) ([]Book, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	p.Author = strings.ToLower(strings.TrimSpace(p.Author))
 
-	cpy := make([]Book, 0)
+	res := make([]Book, 0)
 
 	for _, b := range s.lib {
 		if p.Author != "" {
@@ -63,10 +66,38 @@ func (s *Storage) GetAllBooks(p GetBooksParams) []Book {
 		if p.IsRead != nil && *p.IsRead != b.IsRead {
 			continue
 		}
-		cpy = append(cpy, b)
+		res = append(res, b)
 	}
 
-	return cpy
+	switch p.SortType {
+	case "author":
+		slices.SortFunc(res, func(a, b Book) int {
+			return strings.Compare(
+				strings.ToLower(a.Author),
+				strings.ToLower(b.Author),
+			)
+		})
+	case "title":
+		slices.SortFunc(res, func(a, b Book) int {
+			return strings.Compare(
+				strings.ToLower(a.Title),
+				strings.ToLower(b.Title),
+			)
+		})
+	case "pages":
+		slices.SortFunc(res, func(a, b Book) int {
+			return cmp.Compare(a.Pages, b.Pages)
+		})
+	case "time":
+		slices.SortFunc(res, func(a, b Book) int {
+			return time.Time(a.TimeOfAddition).Compare(time.Time(b.TimeOfAddition))
+		})
+	case "":
+		break
+	default:
+		return nil, ErrInvalidSortKey
+	}
+	return res, nil
 }
 
 func (s *Storage) GetBook(id uuid.UUID) (Book, error) {
@@ -89,7 +120,7 @@ func (s *Storage) DeleteBook(id uuid.UUID) error {
 		return ErrBookNotFound
 	}
 
-	key := GenerateKey(b.Title, b.Author, b.Pages)
+	key := generateKey(b.Title, b.Author, b.Pages)
 
 	delete(s.lib, id)
 	delete(s.uniqueness, key)
