@@ -10,8 +10,8 @@ import (
 
 type Storage struct {
 	uniqueness map[string]struct{}
-	sync.RWMutex
-	lib map[uuid.UUID]Book
+	mu         sync.RWMutex
+	lib        map[uuid.UUID]Book
 }
 
 func NewStorage() *Storage {
@@ -28,25 +28,25 @@ func GenerateKey(title, author string, pages int) string {
 		pages)
 }
 
-func (s *Storage) AddBook(params BookParams) (*Book, error) {
+func (s *Storage) AddBook(params BookParams) (Book, error) {
 	newParams := GenerateKey(params.Title, params.Author, params.Pages)
 
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if _, ok := s.uniqueness[newParams]; ok {
-		return nil, ErrBookAlreadyExists
+		return Book{}, ErrBookAlreadyExists
 	}
 	s.uniqueness[newParams] = struct{}{}
 
 	book := NewBook(params.Title, params.Author, params.Pages)
 	s.lib[book.ID] = *book
-	return book, nil
+	return *book, nil
 }
 
 func (s *Storage) GetAllBooks(p GetBooksParams) []Book {
-	s.RLock()
-	defer s.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	p.Author = strings.ToLower(strings.TrimSpace(p.Author))
 
@@ -69,20 +69,20 @@ func (s *Storage) GetAllBooks(p GetBooksParams) []Book {
 	return cpy
 }
 
-func (s *Storage) GetBook(id uuid.UUID) (*Book, error) {
-	s.RLock()
-	defer s.RUnlock()
+func (s *Storage) GetBook(id uuid.UUID) (Book, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	book, ok := s.lib[id]
 	if !ok {
-		return nil, ErrBookNotFound
+		return Book{}, ErrBookNotFound
 	}
-	return &book, nil
+	return book, nil
 }
 
 func (s *Storage) DeleteBook(id uuid.UUID) error {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	b, ok := s.lib[id]
 	if !ok {
@@ -97,8 +97,8 @@ func (s *Storage) DeleteBook(id uuid.UUID) error {
 }
 
 func (s *Storage) MarkBook(id uuid.UUID, read bool) (Book, error) {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	book, ok := s.lib[id]
 	if !ok {
