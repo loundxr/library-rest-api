@@ -62,5 +62,5 @@ func (e ErrorDTO) String() string {
 }
 
 type ReadDTO struct {
-	Read bool
+	Read bool `json:"read"`
 }
