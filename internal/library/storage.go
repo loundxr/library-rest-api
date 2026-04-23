@@ -2,6 +2,7 @@ package library
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -141,6 +142,56 @@ func (s *Storage) MarkBook(id uuid.UUID, read bool) (Book, error) {
 	} else {
 		book.Unread()
 	}
+	s.lib[id] = book
+	return book, nil
+}
+
+func (s *Storage) PatchBook(id uuid.UUID, p UpdateBookParams) (Book, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	book, ok := s.lib[id]
+	if !ok {
+		return Book{}, ErrBookNotFound
+	}
+	initKey := generateKey(book.Title, book.Author, book.Pages)
+
+	if p.Author != nil {
+		if *p.Author != "" {
+			book.Author = *p.Author
+		} else {
+			return Book{}, errors.New("empty field: author")
+		}
+	}
+	if p.Title != nil {
+		if *p.Title != "" {
+			book.Title = *p.Title
+		} else {
+			return Book{}, errors.New("empty field: title")
+		}
+	}
+	if p.IsRead != nil {
+		if *p.IsRead {
+			book.Read()
+		} else {
+			book.Unread()
+		}
+	}
+	if p.Pages != nil {
+		if *p.Pages >= 0 {
+			book.Pages = *p.Pages
+		} else {
+			return Book{}, errors.New("number of pages must be a positive number")
+		}
+	}
+
+	newKey := generateKey(book.Title, book.Author, book.Pages)
+	if _, ok := s.uniqueness[newKey]; ok {
+		return Book{}, ErrBookAlreadyExists
+	}
+	delete(s.uniqueness, initKey)
+	s.uniqueness[newKey] = struct{}{}
+
 	s.lib[id] = book
 	return book, nil
 }
