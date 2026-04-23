@@ -25,7 +25,7 @@ func (s *HTTPServer) Start(addr string) error {
 	r.HandleFunc("/books", s.httpHandlers.HandleGetAllBooks).Methods(http.MethodGet)
 	r.HandleFunc("/books/{id}", s.httpHandlers.HandleGetBook).Methods(http.MethodGet)
 	r.HandleFunc("/books/{id}", s.httpHandlers.HandleDeleteBook).Methods(http.MethodDelete)
-	r.HandleFunc("/books/{id}", s.httpHandlers.HandleMarkReadBook).Methods(http.MethodPatch)
+	r.HandleFunc("/books/{id}", s.httpHandlers.HandlePatchBook).Methods(http.MethodPatch)
 
 	log.Println("starting server on:", addr)
 	if err := http.ListenAndServe(addr, r); err != nil {

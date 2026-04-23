@@ -40,6 +40,13 @@ type GetBooksParams struct {
 	SortType string
 }
 
+type UpdateBookParams struct {
+	Title  *string
+	Author *string
+	Pages  *int
+	IsRead *bool
+}
+
 func NewBook(title, author string, pages int) *Book {
 	return &Book{
 		ID:             uuid.New(),

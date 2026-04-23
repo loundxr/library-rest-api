@@ -61,6 +61,9 @@ func (e ErrorDTO) String() string {
 	return string(b)
 }
 
-type ReadDTO struct {
-	Read bool `json:"read"`
+type PatchDTO struct {
+	Title  *string `json:"title"`
+	Author *string `json:"author"`
+	Pages  *int    `json:"pages"`
+	IsRead *bool   `json:"read"`
 }

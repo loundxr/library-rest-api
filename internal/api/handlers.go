@@ -144,33 +144,39 @@ func (h *HTTPHandlers) HandleDeleteBook(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *HTTPHandlers) HandleMarkReadBook(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandlers) HandlePatchBook(w http.ResponseWriter, r *http.Request) {
 	id, err := ParseID(mux.Vars(r)["id"], w)
 	if err != nil {
 		return
 	}
 
-	var readDTO ReadDTO
+	var dto PatchDTO
 
-	if err := json.NewDecoder(r.Body).Decode(&readDTO); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		SendError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	b, err := h.lib.MarkBook(id, readDTO.Read)
+	params := library.UpdateBookParams{
+		Title:  dto.Title,
+		Author: dto.Author,
+		Pages:  dto.Pages,
+		IsRead: dto.IsRead,
+	}
 
+	b, err := h.lib.PatchBook(id, params)
 	if err != nil {
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)
 		} else {
-			SendError(w, "internal server error", http.StatusInternalServerError)
+			SendError(w, err.Error(), http.StatusBadRequest)
 		}
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(b); err != nil {
 		fmt.Println("error encoding json:", err)
 	}
-
 }
