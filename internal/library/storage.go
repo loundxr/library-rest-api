@@ -154,6 +154,7 @@ func (s *Storage) PatchBook(id uuid.UUID, p UpdateBookParams) (Book, error) {
 	if !ok {
 		return Book{}, ErrBookNotFound
 	}
+	initKey := generateKey(book.Title, book.Author, book.Pages)
 
 	if p.Author != nil {
 		if *p.Author != "" {
@@ -183,6 +184,14 @@ func (s *Storage) PatchBook(id uuid.UUID, p UpdateBookParams) (Book, error) {
 			return Book{}, errors.New("number of pages must be a positive number")
 		}
 	}
+
+	newKey := generateKey(book.Title, book.Author, book.Pages)
+	if _, ok := s.uniqueness[newKey]; ok {
+		return Book{}, ErrBookAlreadyExists
+	}
+	delete(s.uniqueness, initKey)
+	s.uniqueness[newKey] = struct{}{}
+
 	s.lib[id] = book
 	return book, nil
 }

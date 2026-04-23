@@ -168,6 +168,8 @@ func (h *HTTPHandlers) HandlePatchBook(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)
+		} else if errors.Is(err, library.ErrBookAlreadyExists) {
+			SendError(w, err.Error(), http.StatusConflict)
 		} else {
 			SendError(w, err.Error(), http.StatusBadRequest)
 		}
