@@ -13,16 +13,16 @@ import (
 )
 
 type HTTPHandlers struct {
-	lib *library.Storage
+	lib library.BookRepository
 }
 
-func NewHTTPHandlers(lib *library.Storage) *HTTPHandlers {
+func NewHTTPHandlers(lib library.BookRepository) *HTTPHandlers {
 	return &HTTPHandlers{
 		lib: lib,
 	}
 }
 
-func ParseID(str string, w http.ResponseWriter) (uuid.UUID, error) {
+func parseID(str string, w http.ResponseWriter) (uuid.UUID, error) {
 	id, err := uuid.Parse(str)
 	if err != nil {
 		SendError(w, err.Error(), http.StatusBadRequest)
@@ -32,6 +32,7 @@ func ParseID(str string, w http.ResponseWriter) (uuid.UUID, error) {
 }
 
 func (h *HTTPHandlers) HandleAddBook(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var dto BookDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		SendError(w, err.Error(), http.StatusBadRequest)
@@ -49,7 +50,7 @@ func (h *HTTPHandlers) HandleAddBook(w http.ResponseWriter, r *http.Request) {
 		Pages:  dto.Pages,
 	}
 
-	book, err := h.lib.AddBook(params)
+	book, err := h.lib.AddBook(ctx, params)
 	if err != nil {
 		if errors.Is(err, library.ErrBookAlreadyExists) {
 			SendError(w, err.Error(), http.StatusConflict)
@@ -67,6 +68,7 @@ func (h *HTTPHandlers) HandleAddBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	author := r.URL.Query().Get("author")
 	params := library.GetBooksParams{
 		Author: author,
@@ -85,7 +87,7 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 
 	params.SortType = r.URL.Query().Get("sort")
 
-	books, err := h.lib.GetAllBooks(params)
+	books, err := h.lib.GetAllBooks(ctx, params)
 
 	if err != nil {
 		if errors.Is(err, library.ErrInvalidSortKey) {
@@ -105,12 +107,13 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
-	id, err := ParseID(mux.Vars(r)["id"], w)
+	ctx := r.Context()
+	id, err := parseID(mux.Vars(r)["id"], w)
 	if err != nil {
 		return
 	}
 
-	book, err := h.lib.GetBook(id)
+	book, err := h.lib.GetBook(ctx, id)
 	if err != nil {
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)
@@ -128,12 +131,13 @@ func (h *HTTPHandlers) HandleGetBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HTTPHandlers) HandleDeleteBook(w http.ResponseWriter, r *http.Request) {
-	id, err := ParseID(mux.Vars(r)["id"], w)
+	ctx := r.Context()
+	id, err := parseID(mux.Vars(r)["id"], w)
 	if err != nil {
 		return
 	}
 
-	if err := h.lib.DeleteBook(id); err != nil {
+	if err := h.lib.DeleteBook(ctx, id); err != nil {
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)
 		} else {
@@ -145,7 +149,8 @@ func (h *HTTPHandlers) HandleDeleteBook(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *HTTPHandlers) HandlePatchBook(w http.ResponseWriter, r *http.Request) {
-	id, err := ParseID(mux.Vars(r)["id"], w)
+	ctx := r.Context()
+	id, err := parseID(mux.Vars(r)["id"], w)
 	if err != nil {
 		return
 	}
@@ -164,7 +169,7 @@ func (h *HTTPHandlers) HandlePatchBook(w http.ResponseWriter, r *http.Request) {
 		IsRead: dto.IsRead,
 	}
 
-	b, err := h.lib.PatchBook(id, params)
+	b, err := h.lib.PatchBook(ctx, id, params)
 	if err != nil {
 		if errors.Is(err, library.ErrBookNotFound) {
 			SendError(w, err.Error(), http.StatusNotFound)

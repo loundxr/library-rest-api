@@ -12,7 +12,7 @@ import (
 type BookDTO struct {
 	Title  string `json:"title"`
 	Author string `json:"author"`
-	Pages  int    `json:"pages"`
+	Pages  int    `json:"number_of_pages"`
 }
 
 func (b BookDTO) Validate() error {
