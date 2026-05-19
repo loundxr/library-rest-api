@@ -51,8 +51,8 @@ func main() {
 		log.Fatal("unable to create table:", err)
 	}
 
-	storage := library.NewMemoryStorage()
-	// storage := library.NewDatabaseStorage(pool)
+	// storage := library.NewMemoryStorage()
+	storage := library.NewDatabaseStorage(pool)
 	handlers := api.NewHTTPHandlers(storage)
 	server := api.NewHTTPServer(handlers)
 	address := "localhost:8008"
