@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"library-rest-api/internal/api"
+	"library-rest-api/internal/db"
 	"library-rest-api/internal/library"
 	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 /*
@@ -26,7 +31,28 @@ import (
 */
 
 func main() {
-	storage := library.NewStorage()
+	ctx := context.Background()
+	if err := godotenv.Load(); err != nil {
+		log.Println("no .env file found, using system env file")
+	}
+
+	connString := os.Getenv("DATABASE_URL")
+	if connString == "" {
+		log.Fatal("database url is not set in .env file")
+	}
+
+	pool, err := db.InitDB(ctx, connString)
+	if err != nil {
+		log.Fatal("unable to connect to database:", err)
+	}
+	defer pool.Close()
+
+	if err := db.CreateBooksTable(ctx, pool); err != nil {
+		log.Fatal("unable to create table:", err)
+	}
+
+	storage := library.NewMemoryStorage()
+	// storage := library.NewDatabaseStorage(pool)
 	handlers := api.NewHTTPHandlers(storage)
 	server := api.NewHTTPServer(handlers)
 	address := "localhost:8008"
@@ -34,4 +60,5 @@ func main() {
 	if err := server.Start(address); err != nil {
 		log.Fatal("failed to start server:", err)
 	}
+
 }

@@ -2,6 +2,7 @@ package library
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -12,14 +13,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type Storage struct {
+type MemoryStorage struct {
 	uniqueness map[string]struct{}
 	mu         sync.RWMutex
 	lib        map[uuid.UUID]Book
 }
 
-func NewStorage() *Storage {
-	return &Storage{
+func NewMemoryStorage() *MemoryStorage {
+	return &MemoryStorage{
 		uniqueness: make(map[string]struct{}),
 		lib:        make(map[uuid.UUID]Book),
 	}
@@ -32,7 +33,7 @@ func generateKey(title, author string, pages int) string {
 		pages)
 }
 
-func (s *Storage) AddBook(params BookParams) (Book, error) {
+func (s *MemoryStorage) AddBook(ctx context.Context, params BookParams) (Book, error) {
 	newParams := generateKey(params.Title, params.Author, params.Pages)
 
 	s.mu.Lock()
@@ -48,7 +49,7 @@ func (s *Storage) AddBook(params BookParams) (Book, error) {
 	return *book, nil
 }
 
-func (s *Storage) GetAllBooks(p GetBooksParams) ([]Book, error) {
+func (s *MemoryStorage) GetAllBooks(ctx context.Context, p GetBooksParams) ([]Book, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -87,11 +88,11 @@ func (s *Storage) GetAllBooks(p GetBooksParams) ([]Book, error) {
 		})
 	case "pages":
 		slices.SortFunc(res, func(a, b Book) int {
-			return cmp.Compare(a.Pages, b.Pages)
+			return cmp.Compare(a.NumberOfPages, b.NumberOfPages)
 		})
 	case "time":
 		slices.SortFunc(res, func(a, b Book) int {
-			return time.Time(a.TimeOfAddition).Compare(time.Time(b.TimeOfAddition))
+			return time.Time(a.CreatedAt).Compare(time.Time(b.CreatedAt))
 		})
 	case "":
 		break
@@ -101,7 +102,7 @@ func (s *Storage) GetAllBooks(p GetBooksParams) ([]Book, error) {
 	return res, nil
 }
 
-func (s *Storage) GetBook(id uuid.UUID) (Book, error) {
+func (s *MemoryStorage) GetBook(ctx context.Context, id uuid.UUID) (Book, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -112,7 +113,7 @@ func (s *Storage) GetBook(id uuid.UUID) (Book, error) {
 	return book, nil
 }
 
-func (s *Storage) DeleteBook(id uuid.UUID) error {
+func (s *MemoryStorage) DeleteBook(ctx context.Context, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -121,14 +122,14 @@ func (s *Storage) DeleteBook(id uuid.UUID) error {
 		return ErrBookNotFound
 	}
 
-	key := generateKey(b.Title, b.Author, b.Pages)
+	key := generateKey(b.Title, b.Author, b.NumberOfPages)
 
 	delete(s.lib, id)
 	delete(s.uniqueness, key)
 	return nil
 }
 
-func (s *Storage) MarkBook(id uuid.UUID, read bool) (Book, error) {
+func (s *MemoryStorage) MarkBook(ctx context.Context, id uuid.UUID, read bool) (Book, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -146,7 +147,7 @@ func (s *Storage) MarkBook(id uuid.UUID, read bool) (Book, error) {
 	return book, nil
 }
 
-func (s *Storage) PatchBook(id uuid.UUID, p UpdateBookParams) (Book, error) {
+func (s *MemoryStorage) PatchBook(ctx context.Context, id uuid.UUID, p UpdateBookParams) (Book, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -154,7 +155,7 @@ func (s *Storage) PatchBook(id uuid.UUID, p UpdateBookParams) (Book, error) {
 	if !ok {
 		return Book{}, ErrBookNotFound
 	}
-	initKey := generateKey(book.Title, book.Author, book.Pages)
+	initKey := generateKey(book.Title, book.Author, book.NumberOfPages)
 
 	if p.Author != nil {
 		if *p.Author != "" {
@@ -179,13 +180,13 @@ func (s *Storage) PatchBook(id uuid.UUID, p UpdateBookParams) (Book, error) {
 	}
 	if p.Pages != nil {
 		if *p.Pages >= 0 {
-			book.Pages = *p.Pages
+			book.NumberOfPages = *p.Pages
 		} else {
 			return Book{}, errors.New("number of pages must be a positive number")
 		}
 	}
 
-	newKey := generateKey(book.Title, book.Author, book.Pages)
+	newKey := generateKey(book.Title, book.Author, book.NumberOfPages)
 	if _, ok := s.uniqueness[newKey]; ok {
 		return Book{}, ErrBookAlreadyExists
 	}

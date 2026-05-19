@@ -8,13 +8,13 @@ import (
 )
 
 type Book struct {
-	ID             uuid.UUID   `json:"id"`
-	Title          string      `json:"title"`
-	Author         string      `json:"author"`
-	Pages          int         `json:"pages"`
-	TimeOfAddition PrettyTime  `json:"time_of_addition"`
-	IsRead         bool        `json:"is_read"`
-	ReadAt         *PrettyTime `json:"read_at"`
+	ID            uuid.UUID   `json:"id"`
+	Title         string      `json:"title"`
+	Author        string      `json:"author"`
+	NumberOfPages int         `json:"number_of_pages"`
+	CreatedAt     PrettyTime  `json:"created_at"`
+	IsRead        bool        `json:"is_read"`
+	ReadAt        *PrettyTime `json:"read_at"`
 }
 
 func (b *Book) Read() {
@@ -41,21 +41,21 @@ type GetBooksParams struct {
 }
 
 type UpdateBookParams struct {
-	Title  *string
-	Author *string
-	Pages  *int
-	IsRead *bool
+	Title  *string `json:"title"`
+	Author *string `json:"author"`
+	Pages  *int    `json:"number_of_pages"`
+	IsRead *bool   `json:"is_read"`
 }
 
 func NewBook(title, author string, pages int) *Book {
 	return &Book{
-		ID:             uuid.New(),
-		Title:          title,
-		Author:         author,
-		Pages:          pages,
-		TimeOfAddition: PrettyTime(time.Now()),
-		IsRead:         false,
-		ReadAt:         nil,
+		ID:            uuid.New(),
+		Title:         title,
+		Author:        author,
+		NumberOfPages: pages,
+		CreatedAt:     PrettyTime(time.Now()),
+		IsRead:        false,
+		ReadAt:        nil,
 	}
 }
 
