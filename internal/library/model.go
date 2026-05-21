@@ -38,6 +38,8 @@ type GetBooksParams struct {
 	Author   string
 	IsRead   *bool
 	SortType string
+	Limit    int
+	Offset   int
 }
 
 type UpdateBookParams struct {

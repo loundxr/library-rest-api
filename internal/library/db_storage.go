@@ -108,9 +108,14 @@ func (s *DatabaseStorage) GetAllBooks(ctx context.Context, p GetBooksParams) ([]
 		query += "title ASC"
 	case "pages":
 		query += "number_of_pages ASC"
-	default:
+	case "time":
 		query += "created_at DESC"
+	default:
+		return nil, ErrInvalidSortKey
 	}
+
+	query += fmt.Sprintf("\nLIMIT $%d OFFSET $%d", argID, argID+1)
+	args = append(args, p.Limit, p.Offset)
 
 	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
