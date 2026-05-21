@@ -72,6 +72,8 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 	author := r.URL.Query().Get("author")
 	params := library.GetBooksParams{
 		Author: author,
+		Limit:  10,
+		Offset: 0,
 	}
 
 	if r.URL.Query().Has("is_read") {
@@ -83,6 +85,36 @@ func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		params.IsRead = &isRead
+	}
+
+	if r.URL.Query().Has("limit") {
+		limStr := r.URL.Query().Get("limit")
+		lim, err := strconv.Atoi(limStr)
+		if err != nil {
+			SendError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if lim <= 0 {
+			params.Limit = 10
+		} else if lim > 100 {
+			params.Limit = 100
+		} else {
+			params.Limit = lim
+		}
+	}
+
+	if r.URL.Query().Has("offset") {
+		offsetStr := r.URL.Query().Get("offset")
+		offset, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			SendError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if offset < 0 {
+			params.Offset = 0
+		} else {
+			params.Offset = offset
+		}
 	}
 
 	params.SortType = r.URL.Query().Get("sort")
