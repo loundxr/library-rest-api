@@ -13,6 +13,8 @@ type BookDTO struct {
 	Title  string `json:"title"`
 	Author string `json:"author"`
 	Pages  int    `json:"number_of_pages"`
+	Year   int    `json:"year_of_publication"`
+	Review string `json:"review"`
 }
 
 func (b BookDTO) Validate() error {
@@ -26,6 +28,10 @@ func (b BookDTO) Validate() error {
 
 	if b.Pages <= 0 {
 		return errors.New("number of pages must be a positive number")
+	}
+
+	if b.Year <= 0 {
+		return errors.New("year of publication must be a positive number")
 	}
 
 	return nil
@@ -64,6 +70,8 @@ func (e ErrorDTO) String() string {
 type PatchDTO struct {
 	Title  *string `json:"title"`
 	Author *string `json:"author"`
-	Pages  *int    `json:"pages"`
-	IsRead *bool   `json:"read"`
+	Pages  *int    `json:"number_of_pages"`
+	IsRead *bool   `json:"is_read"`
+	Year   *int    `json:"year_of_publication"`
+	Review *string `json:"review"`
 }

@@ -1,0 +1,3 @@
+ALTER TABLE books
+ADD COLUMN year_of_publication INTEGER NOT NULL
+DEFAULT 0

@@ -47,8 +47,8 @@ func main() {
 	}
 	defer pool.Close()
 
-	if err := db.CreateBooksTable(ctx, pool); err != nil {
-		log.Fatal("unable to create table:", err)
+	if err := db.RunMigrations(connString); err != nil {
+		log.Fatal("migrations error: ", err)
 	}
 
 	// storage := library.NewMemoryStorage()

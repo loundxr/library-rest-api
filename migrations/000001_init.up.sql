@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS books(
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	title TEXT NOT NULL,
+	author TEXT NOT NULL,
+	number_of_pages INTEGER NOT NULL,
+	is_read BOOLEAN NOT NULL DEFAULT FALSE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	read_at TIMESTAMPTZ
+);
