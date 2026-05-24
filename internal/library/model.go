@@ -8,13 +8,15 @@ import (
 )
 
 type Book struct {
-	ID            uuid.UUID   `json:"id"`
-	Title         string      `json:"title"`
-	Author        string      `json:"author"`
-	NumberOfPages int         `json:"number_of_pages"`
-	CreatedAt     PrettyTime  `json:"created_at"`
-	IsRead        bool        `json:"is_read"`
-	ReadAt        *PrettyTime `json:"read_at"`
+	ID                uuid.UUID   `json:"id"`
+	Title             string      `json:"title"`
+	Author            string      `json:"author"`
+	NumberOfPages     int         `json:"number_of_pages"`
+	YearOfPublication int         `json:"year_of_publication"`
+	Review            string      `json:"review"`
+	CreatedAt         PrettyTime  `json:"created_at"`
+	IsRead            bool        `json:"is_read"`
+	ReadAt            *PrettyTime `json:"read_at"`
 }
 
 func (b *Book) Read() {
@@ -32,15 +34,17 @@ type BookParams struct {
 	Title  string
 	Author string
 	Pages  int
+	Year   int
+	Review string
 }
 
 type GetBooksParams struct {
 	Author   string
 	IsRead   *bool
-	Year     int
+	Year     *int
 	SortType string
-	Limit    int
-	Offset   int
+	Limit    *int
+	Offset   *int
 }
 
 type UpdateBookParams struct {
@@ -48,18 +52,21 @@ type UpdateBookParams struct {
 	Author *string `json:"author"`
 	Pages  *int    `json:"number_of_pages"`
 	IsRead *bool   `json:"is_read"`
-	Year   *int    `json:"year_of_publication`
+	Year   *int    `json:"year_of_publication"`
+	Review *string `json:"review"`
 }
 
-func NewBook(title, author string, pages int) *Book {
+func NewBook(title, author string, pages, year int, review string) *Book {
 	return &Book{
-		ID:            uuid.New(),
-		Title:         title,
-		Author:        author,
-		NumberOfPages: pages,
-		CreatedAt:     PrettyTime(time.Now()),
-		IsRead:        false,
-		ReadAt:        nil,
+		ID:                uuid.New(),
+		Title:             title,
+		Author:            author,
+		NumberOfPages:     pages,
+		CreatedAt:         PrettyTime(time.Now()),
+		IsRead:            false,
+		ReadAt:            nil,
+		YearOfPublication: year,
+		Review:            review,
 	}
 }
 

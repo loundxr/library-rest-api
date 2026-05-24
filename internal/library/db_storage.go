@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const BOOK_COLUMNS = "id, title, author, number_of_pages, is_read, created_at, read_at"
+const BOOK_COLUMNS = "id, title, author, number_of_pages, is_read, created_at, read_at, year_of_publication, review"
 
 type DatabaseStorage struct {
 	pool *pgxpool.Pool
@@ -38,6 +38,8 @@ func scanBook(row pgx.Row) (Book, error) {
 		&b.IsRead,
 		&createdAt,
 		&readAt,
+		&b.YearOfPublication,
+		&b.Review,
 	)
 	if err != nil {
 		return Book{}, err
@@ -66,11 +68,11 @@ func convertError(err error) error {
 
 func (s *DatabaseStorage) AddBook(ctx context.Context, params BookParams) (Book, error) {
 	query := fmt.Sprintf(`
-	INSERT INTO books (title, author, number_of_pages)
-	VALUES ($1, $2, $3)
+	INSERT INTO books (title, author, number_of_pages, year_of_publication, review)
+	VALUES ($1, $2, $3, $4, $5)
 	RETURNING %s`, BOOK_COLUMNS)
 
-	row := s.pool.QueryRow(ctx, query, params.Title, params.Author, params.Pages)
+	row := s.pool.QueryRow(ctx, query, params.Title, params.Author, params.Pages, params.Year, params.Review)
 
 	b, err := scanBook(row)
 
@@ -99,23 +101,45 @@ func (s *DatabaseStorage) GetAllBooks(ctx context.Context, p GetBooksParams) ([]
 		query += fmt.Sprintf(" AND is_read = $%d", argID)
 		argID++
 	}
-
-	query += " ORDER BY "
-	switch p.SortType {
-	case "author":
-		query += "author ASC"
-	case "title":
-		query += "title ASC"
-	case "pages":
-		query += "number_of_pages ASC"
-	case "time":
-		query += "created_at DESC"
-	default:
-		return nil, ErrInvalidSortKey
+	if p.Year != nil {
+		args = append(args, *p.Year)
+		query += fmt.Sprintf(" AND year_of_publication = $%d", argID)
+		argID++
 	}
 
-	query += fmt.Sprintf("\nLIMIT $%d OFFSET $%d", argID, argID+1)
-	args = append(args, p.Limit, p.Offset)
+	query += " ORDER BY "
+	if p.SortType != "" {
+		switch p.SortType {
+		case "author":
+			query += "author ASC"
+		case "title":
+			query += "title ASC"
+		case "pages":
+			query += "number_of_pages ASC"
+		case "time":
+			query += "created_at DESC"
+		case "year":
+			query += "year_of_publication ASC"
+		case "":
+			break
+		default:
+			return nil, ErrInvalidSortKey
+		}
+	} else {
+		query += "created_at DESC"
+	}
+
+	if p.Limit != nil {
+		args = append(args, *p.Limit)
+		query += fmt.Sprintf(" LIMIT $%d", argID)
+		argID++
+	}
+
+	if p.Offset != nil {
+		args = append(args, *p.Offset)
+		query += fmt.Sprintf(" OFFSET $%d", argID)
+		argID++
+	}
 
 	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -224,6 +248,12 @@ func (s *DatabaseStorage) PatchBook(ctx context.Context, id uuid.UUID, p UpdateB
 		END`, argID-1, argID-1)
 
 		clauses = append(clauses, readLogic)
+	}
+	if p.Year != nil {
+		addCol("year_of_publication", *p.Year)
+	}
+	if p.Review != nil {
+		addCol("review", *p.Review)
 	}
 
 	if len(clauses) == 0 {

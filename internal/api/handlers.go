@@ -48,6 +48,8 @@ func (h *HTTPHandlers) HandleAddBook(w http.ResponseWriter, r *http.Request) {
 		Title:  dto.Title,
 		Author: dto.Author,
 		Pages:  dto.Pages,
+		Year:   dto.Year,
+		Review: dto.Review,
 	}
 
 	book, err := h.lib.AddBook(ctx, params)
@@ -69,55 +71,60 @@ func (h *HTTPHandlers) HandleAddBook(w http.ResponseWriter, r *http.Request) {
 
 func (h *HTTPHandlers) HandleGetAllBooks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	author := r.URL.Query().Get("author")
+	query := r.URL.Query()
+
 	params := library.GetBooksParams{
-		Author: author,
-		Limit:  10,
-		Offset: 0,
+		Author: query.Get("author"),
 	}
 
-	if r.URL.Query().Has("is_read") {
-		isReadStr := r.URL.Query().Get("is_read")
-
-		isRead, err := strconv.ParseBool(isReadStr)
+	if query.Has("is_read") {
+		isRead, err := strconv.ParseBool(query.Get("is_read"))
 		if err != nil {
-			SendError(w, err.Error(), http.StatusBadRequest)
+			SendError(w, "invalid is_read parameter", http.StatusBadRequest)
 			return
 		}
 		params.IsRead = &isRead
 	}
 
-	if r.URL.Query().Has("limit") {
-		limStr := r.URL.Query().Get("limit")
-		lim, err := strconv.Atoi(limStr)
+	limit := 10
+	if query.Has("limit") {
+		v, err := strconv.Atoi(query.Get("limit"))
 		if err != nil {
 			SendError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if lim <= 0 {
-			params.Limit = 10
-		} else if lim > 100 {
-			params.Limit = 100
-		} else {
-			params.Limit = lim
+		if v > 0 {
+			if v > 100 {
+				v = 100
+			}
+			limit = v
 		}
 	}
+	params.Limit = &limit
 
-	if r.URL.Query().Has("offset") {
-		offsetStr := r.URL.Query().Get("offset")
-		offset, err := strconv.Atoi(offsetStr)
+	offset := 0
+	if query.Has("offset") {
+		v, err := strconv.Atoi(query.Get("offset"))
 		if err != nil {
 			SendError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if offset < 0 {
-			params.Offset = 0
-		} else {
-			params.Offset = offset
+		if v > 0 {
+			offset = v
 		}
 	}
+	params.Offset = &offset
 
-	params.SortType = r.URL.Query().Get("sort")
+	if query.Has("year") {
+		year, err := strconv.Atoi(query.Get("year"))
+		if err != nil {
+			SendError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		params.Year = &year
+	}
+
+	params.SortType = query.Get("sort")
 
 	books, err := h.lib.GetAllBooks(ctx, params)
 
@@ -199,6 +206,8 @@ func (h *HTTPHandlers) HandlePatchBook(w http.ResponseWriter, r *http.Request) {
 		Author: dto.Author,
 		Pages:  dto.Pages,
 		IsRead: dto.IsRead,
+		Year:   dto.Year,
+		Review: dto.Review,
 	}
 
 	b, err := h.lib.PatchBook(ctx, id, params)

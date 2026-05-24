@@ -26,15 +26,16 @@ func NewMemoryStorage() *MemoryStorage {
 	}
 }
 
-func generateKey(title, author string, pages int) string {
-	return fmt.Sprintf("%s/%s/%d",
+func generateKey(title, author string, pages, year int) string {
+	return fmt.Sprintf("%s/%s/%d/%d",
 		strings.ToLower(strings.TrimSpace(title)),
 		strings.ToLower(strings.TrimSpace(author)),
-		pages)
+		pages,
+		year)
 }
 
 func (s *MemoryStorage) AddBook(ctx context.Context, params BookParams) (Book, error) {
-	newParams := generateKey(params.Title, params.Author, params.Pages)
+	newParams := generateKey(params.Title, params.Author, params.Pages, params.Year)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -44,7 +45,7 @@ func (s *MemoryStorage) AddBook(ctx context.Context, params BookParams) (Book, e
 	}
 	s.uniqueness[newParams] = struct{}{}
 
-	book := NewBook(params.Title, params.Author, params.Pages)
+	book := NewBook(params.Title, params.Author, params.Pages, params.Year, params.Review)
 	s.lib[book.ID] = *book
 	return *book, nil
 }
@@ -94,6 +95,10 @@ func (s *MemoryStorage) GetAllBooks(ctx context.Context, p GetBooksParams) ([]Bo
 		slices.SortFunc(res, func(a, b Book) int {
 			return time.Time(a.CreatedAt).Compare(time.Time(b.CreatedAt))
 		})
+	case "year":
+		slices.SortFunc(res, func(a, b Book) int {
+			return cmp.Compare(a.YearOfPublication, b.YearOfPublication)
+		})
 	case "":
 		break
 	default:
@@ -122,7 +127,7 @@ func (s *MemoryStorage) DeleteBook(ctx context.Context, id uuid.UUID) error {
 		return ErrBookNotFound
 	}
 
-	key := generateKey(b.Title, b.Author, b.NumberOfPages)
+	key := generateKey(b.Title, b.Author, b.NumberOfPages, b.YearOfPublication)
 
 	delete(s.lib, id)
 	delete(s.uniqueness, key)
@@ -155,7 +160,7 @@ func (s *MemoryStorage) PatchBook(ctx context.Context, id uuid.UUID, p UpdateBoo
 	if !ok {
 		return Book{}, ErrBookNotFound
 	}
-	initKey := generateKey(book.Title, book.Author, book.NumberOfPages)
+	initKey := generateKey(book.Title, book.Author, book.NumberOfPages, book.YearOfPublication)
 
 	if p.Author != nil {
 		if *p.Author != "" {
@@ -185,8 +190,15 @@ func (s *MemoryStorage) PatchBook(ctx context.Context, id uuid.UUID, p UpdateBoo
 			return Book{}, errors.New("number of pages must be a positive number")
 		}
 	}
+	if p.Year != nil {
+		if *p.Year >= 0 {
+			book.YearOfPublication = *p.Year
+		} else {
+			return Book{}, errors.New("year of publication must be a positive number")
+		}
+	}
 
-	newKey := generateKey(book.Title, book.Author, book.NumberOfPages)
+	newKey := generateKey(book.Title, book.Author, book.NumberOfPages, book.YearOfPublication)
 	if _, ok := s.uniqueness[newKey]; ok {
 		return Book{}, ErrBookAlreadyExists
 	}
