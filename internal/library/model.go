@@ -37,6 +37,7 @@ type BookParams struct {
 type GetBooksParams struct {
 	Author   string
 	IsRead   *bool
+	Year     int
 	SortType string
 	Limit    int
 	Offset   int
@@ -47,6 +48,7 @@ type UpdateBookParams struct {
 	Author *string `json:"author"`
 	Pages  *int    `json:"number_of_pages"`
 	IsRead *bool   `json:"is_read"`
+	Year   *int    `json:"year_of_publication`
 }
 
 func NewBook(title, author string, pages int) *Book {

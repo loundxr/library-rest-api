@@ -1,0 +1,3 @@
+ALTER TABLE books
+ADD COLUMN review TEXT
+DEFAULT 'unknown'

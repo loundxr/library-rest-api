@@ -2,8 +2,13 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,18 +26,19 @@ func InitDB(ctx context.Context, conn_string string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func CreateBooksTable(ctx context.Context, pool *pgxpool.Pool) error {
-	query := `
-	CREATE TABLE IF NOT EXISTS books(
-	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-	title TEXT NOT NULL,
-	author TEXT NOT NULL,
-	number_of_pages INTEGER NOT NULL,
-	is_read BOOLEAN NOT NULL DEFAULT FALSE,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-	read_at TIMESTAMPTZ
-	);`
+func RunMigrations(dbURL string) error {
+	m, err := migrate.New("file://migrations", dbURL)
+	if err != nil {
+		return fmt.Errorf("failed to create migrate instance: %w", err)
+	}
+	defer m.Close()
 
-	_, err := pool.Exec(ctx, query)
-	return err
+	if err := m.Up(); err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			return nil
+		}
+		return fmt.Errorf("failed to apply up migrations: %w", err)
+	}
+	log.Println("migrations applied successfully")
+	return nil
 }
