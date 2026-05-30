@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -22,7 +22,7 @@ func InitDB(ctx context.Context, conn_string string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("unable to ping database: %v", err)
 	}
 
-	fmt.Println("database connection established successfully")
+	slog.Info("database connection established successfully")
 	return pool, nil
 }
 
@@ -39,6 +39,6 @@ func RunMigrations(dbURL string) error {
 		}
 		return fmt.Errorf("failed to apply up migrations: %w", err)
 	}
-	log.Println("migrations applied successfully")
+	slog.Info("migrations applied successfully")
 	return nil
 }
