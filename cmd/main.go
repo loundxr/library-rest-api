@@ -5,7 +5,9 @@ import (
 	"library-rest-api/internal/api"
 	"library-rest-api/internal/db"
 	"library-rest-api/internal/library"
+	"library-rest-api/internal/logger"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -31,34 +33,44 @@ import (
 */
 
 func main() {
+	appLogger, file, err := logger.New()
+	if err != nil {
+		log.Fatal("failed to create logger:", err)
+	}
+	defer file.Close()
+	slog.SetDefault(appLogger)
+
 	ctx := context.Background()
 	if err := godotenv.Load(); err != nil {
-		log.Println("no .env file found, using system env file")
+		slog.Warn("no .env file found, using system env file")
 	}
 
 	connString := os.Getenv("DATABASE_URL")
 	if connString == "" {
-		log.Fatal("database url is not set in .env file")
+		slog.Error("database url is not set in .env file")
+		os.Exit(1)
 	}
-
 	pool, err := db.InitDB(ctx, connString)
 	if err != nil {
-		log.Fatal("unable to connect to database:", err)
+		slog.Error("unable to connect to database", "error", err)
+		os.Exit(1)
 	}
 	defer pool.Close()
 
 	if err := db.RunMigrations(connString); err != nil {
-		log.Fatal("migrations error: ", err)
+		slog.Error("migrations error", "error", err)
+		os.Exit(1)
 	}
 
 	// storage := library.NewMemoryStorage()
 	storage := library.NewDatabaseStorage(pool)
 	handlers := api.NewHTTPHandlers(storage)
-	server := api.NewHTTPServer(handlers)
+	server := api.NewHTTPServer(handlers, appLogger)
 	address := "localhost:8008"
+	slog.Info("starting server", "address", address)
 
 	if err := server.Start(address); err != nil {
-		log.Fatal("failed to start server:", err)
+		slog.Error("failed to start server", "error", err)
+		os.Exit(1)
 	}
-
 }
