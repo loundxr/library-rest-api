@@ -67,7 +67,6 @@ func main() {
 	handlers := api.NewHTTPHandlers(storage)
 	server := api.NewHTTPServer(handlers, appLogger)
 	address := "localhost:8008"
-	slog.Info("starting server", "address", address)
 
 	if err := server.Start(address); err != nil {
 		slog.Error("failed to start server", "error", err)

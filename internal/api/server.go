@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"log"
 	"log/slog"
 	"net/http"
 
@@ -32,7 +31,8 @@ func (s *HTTPServer) Start(addr string) error {
 	r.HandleFunc("/books/{id}", s.httpHandlers.HandleDeleteBook).Methods(http.MethodDelete)
 	r.HandleFunc("/books/{id}", s.httpHandlers.HandlePatchBook).Methods(http.MethodPatch)
 
-	log.Println("starting server on:", addr)
+	slog.Info("starting server", "address", addr)
+
 	if err := http.ListenAndServe(addr, r); err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
